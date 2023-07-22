@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import '../../services/gsheets.dart';
 import '../../services/verify_attendee.dart';
@@ -15,25 +16,15 @@ class _HomePageState extends State<HomePage> {
   Barcode? result;
   QRViewController? controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  bool attendeeAdded = false; // Flag to track if an attendee has been added
-  bool scanning = false; // Flag to track if scanning is in progress
-  Timer? qrScanTimer; // Timer for QR scanning
+  bool scanning = false; // check if it's scanning
 
   @override
   void initState() {
     super.initState();
-    attendeeAdded = false; // Initialize the flag to false
-
-    // 1000ms 1 fps
-    qrScanTimer = Timer.periodic(Duration(milliseconds: 1000), (Timer timer) {
-      // Set scanning flag to false to allow the next scan
-      scanning = false;
-    });
   }
 
   @override
   void dispose() {
-    qrScanTimer?.cancel(); // Cancel the QR scanning timer
     controller?.dispose();
     super.dispose();
   }
@@ -43,6 +34,14 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Event Scanner'),
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: SvgPicture.asset(
+            'assets/images/alexa_logo.svg',
+            width: 32, // Adjust the width as needed
+            height: 32, // Adjust the height as needed
+          ),
+        ),
       ),
       body: Column(
         children: <Widget>[
@@ -53,11 +52,25 @@ class _HomePageState extends State<HomePage> {
           Expanded(
             flex: 1,
             child: Center(
-              child: result != null
-                  ? Text(
-                'Data: ${result!.code}',
-              )
-                  : const Text('Scan a QR code'),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20.0), // Add top padding
+                child: result != null
+                    ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Name: ${getName(result?.code)}',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Reg. No.: ${getEmail(result?.code)}',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                )
+                    : const Text('Scan a QR code'),
+              ),
             ),
           ),
         ],
@@ -90,52 +103,60 @@ class _HomePageState extends State<HomePage> {
 
     controller.scannedDataStream.listen((scanData) async {
       if (scanning) return; // Ignore the scan if already scanning
-      setState(() async {
+
+      // Pause the camera
+      controller.pauseCamera();
+
+      setState(() {
         scanning = true; // Set scanning flag to true to prevent multiple scans
         result = scanData;
-        if (result != null) {
-          String? encryptedData = result!.code;
-          List<String> qrData = encryptedData!.split(',');
+      });
 
-          if (qrData.length >= 2) {
-            String expectedRegNo = qrData[1].trim();
-            String encryptedRegNo = qrData[qrData.length - 1].trim();
-            String decryptedRegNo = VerifyAttendee.decryptData(encryptedRegNo);
+      if (result != null) {
+        String? encryptedData = result!.code;
+        List<String> qrData = encryptedData!.split(',');
 
-            if (!attendeeAdded && decryptedRegNo == expectedRegNo) {
-              // Add the attendee data to Google Sheets
-              try {
-                final gsheetsService = GSheetsService();
-                final attendeeExists = await gsheetsService.checkAttendeeExists(decryptedRegNo);
+        if (qrData.length >= 3) { // Assuming the expected registration number is at index 2
+          String expectedRegNo = qrData[1].trim(); // Use the appropriate index
+          String encryptedRegNo = qrData[qrData.length - 1].trim();
+          String decryptedRegNo = VerifyAttendee.decryptData(encryptedRegNo);
 
-                if (!attendeeExists) {
-                  await gsheetsService.addAttendee(qrData[0], qrData[2], decryptedRegNo);
-                  attendeeAdded = true; // Set the flag to true after adding attendee
-                  _showSuccessSnackBar(); // Show a success SnackBar
-                } else {
-                  _showErrorSnackBar('Attendee Already Added');
-                }
-              } catch (e) {
-                _showErrorSnackBar('Error adding attendee: $e');
+          if (expectedRegNo != decryptedRegNo) {
+            _showErrorSnackBar('Reg No Doesn\'t Match');
+          } else {
+            // Add the attendee data to Google Sheets
+            try {
+              final gsheetsService = GSheetsService();
+              final attendeeExists =
+              await gsheetsService.checkAttendeeExists(decryptedRegNo);
+
+              if (!attendeeExists) {
+                await gsheetsService.addAttendee(
+                    qrData[0], qrData[2], decryptedRegNo);
+                _showSuccessSnackBar(); // Show a success SnackBar
+              } else {
+                _showErrorSnackBar('Attendee Already Added');
               }
-            } else if (attendeeAdded && decryptedRegNo == expectedRegNo) {
-              _showErrorSnackBar('Attendee Already Added');
-            } else {
-              _showErrorSnackBar('Trespasser');
+            } catch (e) {
+              _showErrorSnackBar('Error adding attendee: $e');
             }
           }
+        } else {
+          _showErrorSnackBar('Invalid QR code'); // Show invalid QR code SnackBar
         }
-      });
+      }
     });
   }
+
 
   void _showSuccessSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Attendee Added'),
-        backgroundColor: Colors.green, // Customize the color here
+        backgroundColor: Colors.green,
       ),
     );
+    _resumeCamera();
   }
 
   void _showErrorSnackBar(String message) {
@@ -145,5 +166,25 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.red, // Customize the color here
       ),
     );
+    _resumeCamera();
+  }
+
+  void _resumeCamera() {
+    if (controller != null && scanning) {
+      controller!.resumeCamera();
+      scanning = false;
+    }
+  }
+
+  // Helper methods to extract data from QR code
+
+  String getName(String? qrCode) {
+    List<String> qrData = qrCode?.split(',') ?? [];
+    return qrData.isNotEmpty ? qrData[0].trim() : '';
+  }
+
+  String getEmail(String? qrCode) {
+    List<String> qrData = qrCode?.split(',') ?? [];
+    return qrData.length >= 2 ? qrData[1].trim() : '';
   }
 }

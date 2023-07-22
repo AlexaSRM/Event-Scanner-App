@@ -40,8 +40,10 @@ class GSheetsService {
       throw Exception('ID already exists in Google Sheets');
     }
 
-    await Future.delayed(Duration(seconds: 3)); // 3-second pause
-    final rowData = [name, email, regNo];
+    final currentTime = DateTime.now().toLocal().toString();
+    final rowData = [name, email, regNo, currentTime]; // Add the current time to the rowData
+
     await sheet.values.appendRow(rowData);
   }
+
 }
