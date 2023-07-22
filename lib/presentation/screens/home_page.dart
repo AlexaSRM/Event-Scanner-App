@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import '../../services/gsheets.dart';
 import '../../services/verify_attendee.dart';
+import '../../constants.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -16,7 +17,7 @@ class _HomePageState extends State<HomePage> {
   Barcode? result;
   QRViewController? controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  bool scanning = false; // check if it's scanning
+  bool scanning = false;
 
   @override
   void initState() {
@@ -33,13 +34,13 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Event Scanner'),
+        title: const Text(Constants.appName),
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: SvgPicture.asset(
             'assets/images/alexa_logo.svg',
-            width: 32, // Adjust the width as needed
-            height: 32, // Adjust the height as needed
+            width: 32,
+            height: 32,
           ),
         ),
       ),
@@ -53,7 +54,7 @@ class _HomePageState extends State<HomePage> {
             flex: 1,
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 20.0), // Add top padding
+                padding: const EdgeInsets.only(bottom: 20.0),
                 child: result != null
                     ? Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -69,7 +70,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                 )
-                    : const Text('Scan a QR code'),
+                    : const Text(Constants.scanQRMessage),
               ),
             ),
           ),
@@ -102,13 +103,13 @@ class _HomePageState extends State<HomePage> {
     });
 
     controller.scannedDataStream.listen((scanData) async {
-      if (scanning) return; // Ignore the scan if already scanning
+      if (scanning) return;
 
       // Pause the camera
       controller.pauseCamera();
 
       setState(() {
-        scanning = true; // Set scanning flag to true to prevent multiple scans
+        scanning = true;
         result = scanData;
       });
 
@@ -116,15 +117,14 @@ class _HomePageState extends State<HomePage> {
         String? encryptedData = result!.code;
         List<String> qrData = encryptedData!.split(',');
 
-        if (qrData.length >= 3) { // Assuming the expected registration number is at index 2
-          String expectedRegNo = qrData[1].trim(); // Use the appropriate index
+        if (qrData.length >= 3) {
+          String expectedRegNo = qrData[1].trim();
           String encryptedRegNo = qrData[qrData.length - 1].trim();
           String decryptedRegNo = VerifyAttendee.decryptData(encryptedRegNo);
 
           if (expectedRegNo != decryptedRegNo) {
-            _showErrorSnackBar('Reg No Doesn\'t Match');
+            _showErrorSnackBar(Constants.duplicateAttendeeMessage);
           } else {
-            // Add the attendee data to Google Sheets
             try {
               final gsheetsService = GSheetsService();
               final attendeeExists =
@@ -133,16 +133,16 @@ class _HomePageState extends State<HomePage> {
               if (!attendeeExists) {
                 await gsheetsService.addAttendee(
                     qrData[0], qrData[2], decryptedRegNo);
-                _showSuccessSnackBar(); // Show a success SnackBar
+                _showSuccessSnackBar();
               } else {
-                _showErrorSnackBar('Attendee Already Added');
+                _showErrorSnackBar(Constants.attendeeAddedMessage);
               }
             } catch (e) {
               _showErrorSnackBar('Error adding attendee: $e');
             }
           }
         } else {
-          _showErrorSnackBar('Invalid QR code'); // Show invalid QR code SnackBar
+          _showErrorSnackBar(Constants.invalidQRCodeMessage);
         }
       }
     });
@@ -152,7 +152,7 @@ class _HomePageState extends State<HomePage> {
   void _showSuccessSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Attendee Added'),
+        content: const Text(Constants.attendeeAddedMessage),
         backgroundColor: Colors.green,
       ),
     );
@@ -163,7 +163,7 @@ class _HomePageState extends State<HomePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red, // Customize the color here
+        backgroundColor: Colors.red,
       ),
     );
     _resumeCamera();
