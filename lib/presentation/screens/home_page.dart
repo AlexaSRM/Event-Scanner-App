@@ -176,7 +176,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Helper methods to extract data from QR code
+
 
   String getName(String? qrCode) {
     List<String> qrData = qrCode?.split(',') ?? [];
