@@ -18,6 +18,7 @@ class _HomePageState extends State<HomePage> {
   QRViewController? controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   bool scanning = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -48,7 +49,12 @@ class _HomePageState extends State<HomePage> {
         children: <Widget>[
           Expanded(
             flex: 5,
-            child: _buildQrView(context),
+            child: Stack(
+              children: [
+                _buildQrView(context),
+                if (_isLoading) Center(child: CircularProgressIndicator()),
+              ],
+            ),
           ),
           Expanded(
             flex: 1,
@@ -103,7 +109,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     controller.scannedDataStream.listen((scanData) async {
-      if (scanning) return;
+      if (scanning || _isLoading) return;
 
       // Pause the camera
       controller.pauseCamera();
@@ -111,6 +117,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         scanning = true;
         result = scanData;
+        _isLoading = true;
       });
 
       if (result != null) {
@@ -123,7 +130,7 @@ class _HomePageState extends State<HomePage> {
           String decryptedRegNo = VerifyAttendee.decryptData(encryptedRegNo);
 
           if (expectedRegNo != decryptedRegNo) {
-            _showErrorSnackBar(Constants.duplicateAttendeeMessage);
+            _showErrorSnackBar(Constants.decryptionMismatch);
           } else {
             try {
               final gsheetsService = GSheetsService();
@@ -135,7 +142,7 @@ class _HomePageState extends State<HomePage> {
                     qrData[0], qrData[2], decryptedRegNo);
                 _showSuccessSnackBar();
               } else {
-                _showErrorSnackBar(Constants.attendeeAddedMessage);
+                _showErrorSnackBar(Constants.duplicateAttendeeMessage);
               }
             } catch (e) {
               _showErrorSnackBar('Error adding attendee: $e');
@@ -145,9 +152,14 @@ class _HomePageState extends State<HomePage> {
           _showErrorSnackBar(Constants.invalidQRCodeMessage);
         }
       }
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      _resumeCamera();
     });
   }
-
 
   void _showSuccessSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -175,8 +187,6 @@ class _HomePageState extends State<HomePage> {
       scanning = false;
     }
   }
-
-
 
   String getName(String? qrCode) {
     List<String> qrData = qrCode?.split(',') ?? [];
