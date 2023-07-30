@@ -111,7 +111,7 @@ class _HomePageState extends State<HomePage> {
     controller.scannedDataStream.listen((scanData) async {
       if (scanning || _isLoading) return;
 
-      // Pause the camera
+
       controller.pauseCamera();
 
       setState(() {

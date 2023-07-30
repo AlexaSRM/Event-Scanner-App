@@ -1,6 +1,8 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gsheets/gsheets.dart';
 
+import '../constants.dart';
+
 class GSheetsService {
   final GSheets _gsheets;
 
@@ -20,7 +22,7 @@ class GSheetsService {
 
     final existingIds = await sheet!.values.column(3);
     if (existingIds.contains(regNo)) {
-      throw Exception(dotenv.env['ID_ALREADY_EXISTS'] ?? 'ID already exists');
+      throw Exception(Constants.idAlreadyExists);
     }
 
     final currentTime = DateTime.now().toLocal().toString();
