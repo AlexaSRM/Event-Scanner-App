@@ -1,6 +1,6 @@
 class VerifyAttendee {
 
-  static String _keyword = "MySecretKeyword";
+  static String _keyword = "MonkeyBananaAlexa"; //Replace with encryption key
 
   static String decryptData(String encryptedData) {
     String decryptedData = '';
