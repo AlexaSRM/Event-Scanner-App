@@ -36,7 +36,8 @@ Launch the application
 flutter run
 ```
 
-## Shout outs
+## Shout outs 💥
+
 The product is build by the following member(s):
 
 
