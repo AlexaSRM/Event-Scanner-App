@@ -1,6 +1,8 @@
-<p align="center">
-<img src="https://github.com/AlexaSRM/Event-Scanner-App/blob/main/assets/images/logo.png" alt="Image description">
-</p>
+
+<div align="center">
+  <img alt="Alexa Logo" src="assets/images/logo.png" height="56" />
+</div>
+ 
 
  <div align="center">
   <h2>Event Scanner App</h2>
@@ -12,6 +14,13 @@ The official app to scan QR Codes for Alexa Developers SRM.
 <p align="center">
 Created by <a href="https://alexadevsrm.com">Alexa Developers SRM</a>.
 </p>
+
+<p align="center">
+    <img src="https://img.shields.io/badge/version-1.0.0-yellowgreen" alt="version 1.0.0"/>
+ 
+  <img src="https://img.shields.io/badge/author-Alexa%20Dev%20SRM-blue" alt="author Alexa Dev SRM"/>
+</p>
+
 
 ## Installation 🔧
 
@@ -26,7 +35,15 @@ Launch the application
 ```
 flutter run
 ```
- 
+
+## Shout outs
+The product is build by the following member(s):
+
+
+|  <p align="center"><img src="https://github.com/vishruth-r.png" alt="Vishruth R" width="128"><br>[Vishruth R](https://github.com/vishruth-r)</p> | <p align="center"><img  src="https://github.com/devangana-ghosh.png" alt="Devangana Ghosh" width="128"><br>[Devangana Ghosh](https://github.com/Devangana-Ghosh)</p> | <p align="center"><img src="https://github.com/arnavkshah15.png" alt="Arnav Shah" width="128"><br>[Arnav Shah](https://github.com/arnavkshah15)</p> |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+
+
 ## Description
 
 This app is a QR code scanner integrated with Google Sheets, designed for event management. Users can scan QR codes to register attendees, and the app verifies and stores the attendee information securely in Google Sheets. It also checks for duplicate registrations and displays real-time feedback to the user with success and error messages. The app aims to streamline the event check-in process and maintain an organized attendee database.
